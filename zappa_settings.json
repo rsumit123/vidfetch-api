@@ -1,0 +1,10 @@
+{
+    "dev": {
+        "app_function": "vidfetch.app",
+        "profile_name": "default",
+        "project_name": "vidfetch",
+        "runtime": "python3.9",
+        "s3_bucket": "vidfetch",
+        "aws_region": "us-east-1"
+    }
+}
