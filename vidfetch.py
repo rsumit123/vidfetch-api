@@ -86,10 +86,11 @@ def get_video_url(data):
 
 
 @app.route("/video-id")
-def get_video_id():
+def get_video_id(post_url=None):
     """Fetches instagram video url, uploads the file to S3 and returns a video id"""
     try:
-        post_url = request.args.get("postUrl")
+        if post_url is None:
+            post_url = request.args.get("postUrl")
         short_code = post_url.split("https://")[1].split("/")[2]
         post_data["variables"] = '{"shortcode":' + '"' + short_code + '"}'
 
@@ -105,6 +106,8 @@ def get_video_id():
         )
 
         video_filename = str(short_code.replace("/", ""))
+
+        # app.logger.debug(f'Received data -> {response.text}')
 
         data = response.json()
 
@@ -137,11 +140,11 @@ def get_video_id():
         else:
             app.logger.info("Sorry, file %s does not exist." % filepath)
 
-        return jsonify({"success": True, "video_id": video_filename, "status": 200})
+        return make_response(jsonify({"success": True, "video_id": video_filename, "status": 200}), 200)
 
     except Exception as e:
         app.logger.error(f"Error while generation of video id, {e}")
-        return jsonify({"success": False, "error": str(e), "status": 500})
+        return make_response(jsonify({"success": False, "error": str(e), "status": 500}), 500)
 
 
 @app.route("/video")
@@ -152,12 +155,25 @@ def get_video_data():
 
         presigned_url = generate_presigned_url(bucket_name, video_filename)
 
-        return jsonify({"video_url": presigned_url, "status": 200})
+        return make_response(jsonify({"video_url": presigned_url, "status": 200}), 200)
 
     except Exception as e:
         app.logger.error(f"Error while fetching video from S3, {e}")
 
-        return jsonify({"success": False, "error": str(e), "status": 500})
+        return make_response(jsonify({"success": False, "error": str(e), "status": 500}), 500)
+
+
+@app.route("/health")
+def check_health():
+
+    response = get_video_id(post_url="https://www.instagram.com/reels/CtBxeRULhqO/")
+    print(response)
+    # data = response.data()
+    if (response.status_code==200):
+        return make_response(jsonify({"status": "OK"}), 200)
+    else:
+        return make_response(jsonify({"status": "FAILED"}), 500)
+    
 
 
 @app.route("/")
